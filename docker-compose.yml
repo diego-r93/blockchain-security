@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  blockchain:
+    image: python:3.9-slim
+    container_name: blockchain
+    working_dir: /app
+    volumes:
+      - ./blockchain:/app
+    command: ["sh", "-c", "pip install -r requirements.txt && python blockchain_server.py"]
+    networks:
+      - app_network
+      - mosquitto_network
+
+  iot_device:
+    image: python:3.9-slim
+    working_dir: /app
+    volumes:
+      - ./iot_device:/app
+    command: ["sh", "-c", "pip install -r requirements.txt && python app.py"]
+    networks:
+      - app_network
+      - mosquitto_network 
+    env_file:
+      - .env   
+  
+  mosquitto:
+    image: eclipse-mosquitto:2.0.18
+    container_name: mosquitto_project
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+      - ./mosquitto.sh:/mosquitto.sh
+    ports:
+      - 1883:1883
+      - 9001:9001
+    networks:
+      - mosquitto_network
+    environment:
+      - MQTT_USER_NAME=${MQTT_USER_NAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+    entrypoint: [ "./mosquitto.sh" ]
+
+  nginx:
+    image: nginx:1.25
+    container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - iot_device
+    networks:
+      - app_network
+    env_file:
+      - .env
+
+networks:
+  mosquitto_network:  
+  app_network:
