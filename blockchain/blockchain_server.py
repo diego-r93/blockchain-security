@@ -32,12 +32,17 @@ def add_data():
     if not device_id or device_id not in consensus_manager.network.nodes:
         return jsonify({"error": "Device not registered"}), 400
 
+    # Verifica se a reputação do dispositivo é maior que zero
+    reputation = consensus_manager.network.nodes[device_id].get("reputation", 0)
+    if reputation <= 0:
+        return jsonify({"error": "Device reputation is zero or negative, cannot add data to blockchain"}), 400
+
+    # Seleciona proxy nodes para o consenso
     proxy_nodes = consensus_manager.select_proxy_nodes()
     consensus, approvals = consensus_manager.consensus_round(proxy_nodes, data)
 
     if consensus:
-        reputation = consensus_manager.network.nodes[device_id]["reputation"]
-        data["reputation"] = reputation
+        data["reputation"] = reputation  # Inclui a reputação na transação
         blockchain.add_block(data)
         return jsonify({"message": "Block added with consensus.", "reputation": reputation, "approvals": approvals}), 201
     else:
