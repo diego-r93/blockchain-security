@@ -53,8 +53,8 @@ sudo apt install git
 ##### 2. Clonando o repositório
 
 ```bash
-git clone git@github.com:diego-r93/tomatoes-server.git
-cd tomatoes-server
+git clone git@github.com:diego-r93/blockchain-security.git
+cd blockchain-security
 ```
 Lembre-se de substituir URL_DO_REPOSITÓRIO_DO_GITHUB pelo URL do seu repositório e NOME_DO_REPOSITÓRIO pelo nome do diretório do projeto clonado.
 
