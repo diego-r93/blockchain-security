@@ -18,19 +18,16 @@ class ConsensusManager:
         Seleciona proxy nodes com base na reputação.
         """
         nodes = list(self.network.nodes(data=True))
-        
+
         if not nodes:
             raise ValueError("Nenhum node disponível na rede para realizar o consenso.")
 
         reputations = np.array([data["reputation"] for _, data in nodes])
-
-        # Verifica se todas as reputações são 0 ou a soma é 0
         if reputations.sum() == 0:
-            probabilities = np.ones(len(reputations)) / len(reputations)  # Probabilidades iguais
+            probabilities = np.ones(len(reputations)) / len(reputations)
         else:
-            probabilities = reputations / reputations.sum()  # Normaliza as reputações para somar 1
+            probabilities = reputations / reputations.sum()
 
-        # Garante que o número de proxy nodes não exceda o número de nodes disponíveis
         num_proxies = min(num_proxies, len(nodes))
 
         try:
@@ -48,7 +45,6 @@ class ConsensusManager:
         temperature = transaction.get("temperature")
         humidity = transaction.get("humidity")
 
-        # Dados válidos estão no intervalo esperado
         if 20 <= temperature <= 30 and 30 <= humidity <= 50:
             return True
         return False
@@ -70,17 +66,11 @@ class ConsensusManager:
         total_votes = len(proxy_nodes)
 
         for node in proxy_nodes:
-            # Simula validação da transação pelo proxy node
             if self.validate_transaction(transaction):
-                # Proxy node aprova a transação com 90% de chance
                 if random.random() < 0.9:
                     approvals += 1
             else:
-                # Penaliza o proxy node se ele validar uma transação inválida
                 self.penalize_node(node)
 
-        # Retorna o resultado do consenso
-        if approvals > total_votes / 2:
-            return True, approvals  # Consenso alcançado
-        else:
-            return False, approvals  # Consenso falhou
+        print(f"Consenso: {approvals}/{total_votes} aprovações.")
+        return approvals > total_votes / 2, approvals

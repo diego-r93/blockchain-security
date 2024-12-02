@@ -1,7 +1,6 @@
 import hashlib
 import time
 from ecdsa import SigningKey, VerifyingKey, SECP256k1
-import json
 
 def generate_public_key(private_key_hex):
     sk = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
@@ -25,14 +24,6 @@ class Block:
         sk = SigningKey.from_string(bytes.fromhex(private_key), curve=SECP256k1)
         return sk.sign(self.hash.encode()).hex()
 
-    def is_signature_valid(self, public_key):
-        try:
-            vk = VerifyingKey.from_string(bytes.fromhex(public_key), curve=SECP256k1)
-            return vk.verify(bytes.fromhex(self.signature), self.hash.encode())
-        except Exception as e:
-            print(f"Erro na validação da assinatura: {e}")
-            return False
-
     def to_dict(self):
         return {
             "index": self.index,
@@ -54,7 +45,12 @@ class Blockchain:
 
     def add_block(self, data):
         previous_block = self.chain[-1]
-        new_block = Block(len(self.chain), data, previous_block.hash, self.private_key)
+        new_block = Block(
+            index=len(self.chain),
+            data=data,
+            previous_hash=previous_block.hash,
+            private_key=self.private_key
+        )
         self.chain.append(new_block)
 
     def is_chain_valid(self):
@@ -66,9 +62,6 @@ class Blockchain:
                 return False
 
             if current_block.previous_hash != previous_block.hash:
-                return False
-
-            if not current_block.is_signature_valid(self.public_key):
                 return False
 
         return True
