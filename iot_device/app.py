@@ -17,7 +17,7 @@ PORT = int(os.getenv("MQTT_PORT", 1883))
 USER = os.getenv("MQTT_USER_NAME", "user")
 PASSWORD = os.getenv("MQTT_PASSWORD", "password")
 TOPIC = "iot/data"
-BLOCKCHAIN_URL = os.getenv("BLOCKCHAIN_URL", "http://localhost:5000/")
+BLOCKCHAIN_URL = os.getenv("BLOCKCHAIN_URL", "http://localhost:5000")
 DEVICE_ID = os.getenv("HOSTNAME", "iot_device_default")
 BR_TZ = pytz.timezone("America/Sao_Paulo")
 

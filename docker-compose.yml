@@ -21,6 +21,8 @@ services:
     networks:
       - app_network
       - mosquitto_network 
+    depends_on:
+      - blockchain
     env_file:
       - .env   
   
@@ -51,6 +53,7 @@ services:
     ports:
       - "8080:80"
     depends_on:
+      - blockchain
       - iot_device
     networks:
       - app_network
