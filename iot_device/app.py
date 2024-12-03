@@ -24,12 +24,24 @@ BR_TZ = pytz.timezone("America/Sao_Paulo")
 def generate_data():
     """
     Gera dados simulados para o dispositivo.
+    Alterna entre dados válidos e inválidos.
     """
     current_time = datetime.now(BR_TZ).strftime("%Y-%m-%d %H:%M:%S")
+
+    # Alternar entre dados válidos e inválidos
+    if random.choice([True, False]):  # 50% de chance para dados válidos
+        temperature = round(random.uniform(10, 30), 2)  # Válido
+        humidity = round(random.uniform(30, 80), 2)    # Válido
+    else:
+        temperature = round(random.uniform(0, 50), 2)  # Pode ser inválido
+        humidity = round(random.uniform(0, 100), 2)    # Pode ser inválido
+
+    print(f"Gerando dados - Temperatura: {temperature}, Umidade: {humidity}")
+
     return {
         "device_id": DEVICE_ID,
-        "temperature": round(random.uniform(20, 30), 2),
-        "humidity": round(random.uniform(30, 50), 2),
+        "temperature": temperature,
+        "humidity": humidity,
         "timestamp": time.time(),
         "formatted_time": current_time
     }
@@ -47,23 +59,25 @@ def send_to_blockchain(data):
     except Exception as e:
         print(f"Blockchain: Erro ao enviar dados: {e}")
 
-def register_device():
+def ensure_device_registered():
     """
-    Registra o dispositivo na blockchain.
+    Garante que o dispositivo está registrado antes de enviar dados.
     """
-    device_data = {"device_id": DEVICE_ID}
-    try:
-        response = requests.post(f"{BLOCKCHAIN_URL}/add_device", json=device_data)
-        if response.status_code == 201:
-            print(f"Dispositivo registrado com sucesso: {DEVICE_ID}")
-        else:
-            print(f"Falha ao registrar dispositivo: {response.text}")
-    except Exception as e:
-        print(f"Erro ao registrar dispositivo: {e}")
+    while True:
+        try:
+            response = requests.post(f"{BLOCKCHAIN_URL}/add_device", json={"device_id": DEVICE_ID})
+            if response.status_code == 201:
+                print(f"Dispositivo registrado com sucesso: {DEVICE_ID}")
+                break
+            else:
+                print(f"Falha ao registrar dispositivo: {response.status_code} - {response.text}")
+        except Exception as e:
+            print(f"Erro ao registrar dispositivo: {e}")
+        time.sleep(5)  # Aguarde 5 segundos antes de tentar novamente
 
 if __name__ == "__main__":
-    # Registrar o dispositivo
-    register_device()
+    # Garantir o registro do dispositivo
+    ensure_device_registered()
 
     # Conectar ao broker MQTT
     client = mqtt.Client()

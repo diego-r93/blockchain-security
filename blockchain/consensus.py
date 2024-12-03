@@ -20,23 +20,29 @@ class ConsensusManager:
         nodes = list(self.network.nodes(data=True))
 
         if not nodes:
-            raise ValueError("Nenhum node disponível na rede para realizar o consenso.")
+            raise ValueError("Nenhum nó disponível na rede para realizar o consenso.")
 
-        reputations = np.array([data["reputation"] for _, data in nodes])
-        if reputations.sum() == 0:
-            probabilities = np.ones(len(reputations)) / len(reputations)
-        else:
-            probabilities = reputations / reputations.sum()
+        # Filtrar apenas nós com reputação maior que zero
+        valid_nodes = [(node_id, data) for node_id, data in nodes if data["reputation"] > 0]
+        if not valid_nodes:
+            raise ValueError("Nenhum nó com reputação válida disponível para realizar o consenso.")
 
-        num_proxies = min(num_proxies, len(nodes))
+        # Extrair reputações dos nós válidos
+        reputations = np.array([data["reputation"] for _, data in valid_nodes])
+
+        # Normalizar as probabilidades
+        probabilities = reputations / reputations.sum()
+
+        # Ajustar o número de proxies ao número de nós válidos
+        num_proxies = min(num_proxies, len(valid_nodes))
 
         try:
             selected_nodes = np.random.choice(
-                [node[0] for node in nodes], size=num_proxies, replace=False, p=probabilities
+                [node[0] for node in valid_nodes], size=num_proxies, replace=False, p=probabilities
             )
             return selected_nodes
         except ValueError as e:
-            raise ValueError(f"Erro ao selecionar proxy nodes: {e}. Nodes: {nodes}, Probabilidades: {probabilities}")
+            raise ValueError(f"Erro ao selecionar proxy nodes: {e}. Nodes: {valid_nodes}, Probabilidades: {probabilities}")
 
     def validate_transaction(self, transaction):
         """
@@ -45,7 +51,7 @@ class ConsensusManager:
         temperature = transaction.get("temperature")
         humidity = transaction.get("humidity")
 
-        if 20 <= temperature <= 30 and 30 <= humidity <= 50:
+        if 10 <= temperature <= 30 and 30 <= humidity <= 80:
             return True
         return False
 
@@ -58,6 +64,15 @@ class ConsensusManager:
             self.network.nodes[node_id]["reputation"] = max(0, current_reputation - 0.1)
             print(f"Nó {node_id} penalizado. Nova reputação: {self.network.nodes[node_id]['reputation']}")
 
+    def reward_node(self, node_id):
+        """
+        Aumenta a reputação de um nó.
+        """
+        if node_id in self.network:
+            current_reputation = self.network.nodes[node_id]["reputation"]
+            self.network.nodes[node_id]["reputation"] = min(1.0, current_reputation + 0.1)
+            print(f"Nó {node_id} recompensado. Nova reputação: {self.network.nodes[node_id]['reputation']}")
+
     def consensus_round(self, proxy_nodes, transaction):
         """
         Realiza uma rodada de consenso entre os proxy nodes.
@@ -69,8 +84,9 @@ class ConsensusManager:
             if self.validate_transaction(transaction):
                 if random.random() < 0.9:
                     approvals += 1
+                    self.reward_node(node)  # Recompensa o nó por aprovar uma transação válida
             else:
-                self.penalize_node(node)
+                self.penalize_node(node)  # Penaliza o nó por rejeitar ou validar uma transação inválida
 
         print(f"Consenso: {approvals}/{total_votes} aprovações.")
         return approvals > total_votes / 2, approvals
